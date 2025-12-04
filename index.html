@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rabbiya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        background: #000;
+        overflow: hidden;
+        font-family: 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    #canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    /* ========== INTRO SEQUENCE ========== */
+    .intro-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+        transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .intro-overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .intro-text {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(1.5rem, 4vw, 2.5rem);
+        font-weight: 300;
+        font-style: italic;
+        color: rgba(255, 255, 255, 0.85);
+        text-align: center;
+        max-width: 800px;
+        width: 100%;
+        padding: 0 2rem;
+        opacity: 0;
+        line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+        .intro-text {
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            padding: 0 2rem;
+            max-width: 90%;
+        }
+    }
+
+    .intro-text.active {
+        animation: textFade 4s ease-in-out;
+    }
+
+    @keyframes textFade {
+        0%, 100% { opacity: 0; transform: translateY(10px); }
+        15%, 85% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========== HER NAME ========== */
+    .name-container {
+        position: fixed;
+        top: 50%;
+        right: 12%;
+        transform: translateY(-50%);
+        z-index: 50;
+        opacity: 0;
+        transition: opacity 2s ease;
+    }
+
+    @media (max-width: 768px) {
+        .name-container {
+            left: 50%;
+            right: auto;
+            transform: translate(-50%, -50%);
+        }
+    }
+
+    .name-container.visible {
+        opacity: 1;
+    }
+
+    .name-main {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(2.5rem, 10vw, 8rem);
+        font-weight: 200;
+        letter-spacing: 0.3em;
+        color: #fff;
+        text-transform: uppercase;
+        position: relative;
+        text-shadow: 
+            0 0 20px rgba(255, 255, 255, 0.8),
+            0 0 40px rgba(255, 240, 200, 0.6),
+            0 0 60px rgba(255, 220, 150, 0.4),
+            0 0 100px rgba(255, 200, 100, 0.2);
+        animation: warmGlow 4s ease-in-out infinite;
+    }
+
+    @media (max-width: 768px) {
+        .name-main {
+            letter-spacing: 0.2em;
+            writing-mode: horizontal-tb;
+        }
+    }
+
+    @keyframes warmGlow {
+        0%, 100% {
+            text-shadow: 
+                0 0 20px rgba(255, 255, 255, 0.8),
+                0 0 40px rgba(255, 240, 200, 0.6),
+                0 0 60px rgba(255, 220, 150, 0.4),
+                0 0 100px rgba(255, 200, 100, 0.2);
+        }
+        50% {
+            text-shadow: 
+                0 0 30px rgba(255, 255, 255, 1),
+                0 0 60px rgba(255, 240, 200, 0.8),
+                0 0 90px rgba(255, 220, 150, 0.6),
+                0 0 140px rgba(255, 200, 100, 0.3);
+        }
+    }
+
+    .name-main::after {
+        content: '';
+        position: absolute;
+        bottom: -20px;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent,
+            rgba(255, 255, 255, 0.6) 20%,
+            rgba(255, 255, 255, 0.6) 80%,
+            transparent
+        );
+    }
+
+    .name-subtitle {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(1rem, 2.5vw, 1.5rem);
+        font-weight: 300;
+        font-style: italic;
+        color: rgba(255, 255, 255, 0.5);
+        letter-spacing: 0.15em;
+        text-align: center;
+        margin-top: 30px;
+        text-transform: lowercase;
+    }
+
+    /* ========== MESSAGE OVERLAY ========== */
+    .message-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        background: rgba(0, 0, 0, 0.96);
+        backdrop-filter: blur(20px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .message-overlay.visible {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .message-content {
+        max-width: 900px;
+        max-height: 90vh;
+        padding: 3rem;
+        text-align: center;
+        overflow-y: auto;
+    }
+
+    @media (max-width: 768px) {
+        .message-content {
+            padding: 2rem 1.5rem;
+            max-height: 85vh;
+        }
+    }
+
+    .message-title {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(2rem, 8vw, 6rem);
+        font-weight: 200;
+        letter-spacing: 0.2em;
+        color: #fff;
+        margin-bottom: 4rem;
+        text-transform: uppercase;
+    }
+
+    @media (max-width: 768px) {
+        .message-title {
+            margin-bottom: 2rem;
+            letter-spacing: 0.15em;
+        }
+    }
+
+    .message-text {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(1rem, 2.5vw, 1.8rem);
+        font-weight: 400;
+        line-height: 1.9;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 2.5rem;
+        opacity: 0;
+        animation: messageFade 1s ease forwards;
+    }
+
+    @media (max-width: 768px) {
+        .message-text {
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+        }
+    }
+
+    .message-text:nth-child(2) { animation-delay: 0.1s; }
+    .message-text:nth-child(3) { animation-delay: 0.2s; }
+    .message-text:nth-child(4) { animation-delay: 0.3s; }
+    .message-text:nth-child(5) { animation-delay: 0.4s; }
+    .message-text:nth-child(6) { animation-delay: 0.5s; }
+
+    @keyframes messageFade {
+        to { opacity: 1; }
+    }
+
+    .message-signature {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(1.5rem, 3vw, 2.2rem);
+        font-weight: 300;
+        font-style: italic;
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 4rem;
+        opacity: 0;
+        animation: messageFade 1s ease forwards;
+        animation-delay: 0.6s;
+    }
+
+    .day-counter {
+        margin-top: 3rem;
+        opacity: 0;
+        animation: messageFade 1s ease forwards;
+        animation-delay: 0.7s;
+    }
+
+    .day-number {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(3rem, 6vw, 5rem);
+        font-weight: 200;
+        color: #fff;
+        display: block;
+        margin-bottom: 1rem;
+        letter-spacing: 0.1em;
+    }
+
+    .day-label {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(0.8rem, 1.5vw, 1rem);
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.4);
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+    }
+
+    .close-btn {
+        position: fixed;
+        top: 2rem;
+        right: 2rem;
+        width: 50px;
+        height: 50px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1.5rem;
+        color: rgba(255, 255, 255, 0.4);
+        z-index: 201;
+    }
+
+    @media (max-width: 768px) {
+        .close-btn {
+            top: 1rem;
+            right: 1rem;
+            width: 44px;
+            height: 44px;
+        }
+    }
+
+    .close-btn:hover {
+        border-color: rgba(255, 255, 255, 0.6);
+        color: rgba(255, 255, 255, 0.8);
+        transform: rotate(90deg);
+    }
+
+    /* ========== INTERACTION HINT ========== */
+    .interaction-hint {
+        position: fixed;
+        bottom: 3rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 80;
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(0.65rem, 1.5vw, 0.9rem);
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.3);
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        opacity: 0;
+        animation: hintFade 1.5s ease forwards, hintFloat 3s ease-in-out infinite;
+        animation-delay: 8s, 9.5s;
+        cursor: pointer;
+        transition: color 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+        .interaction-hint {
+            bottom: 2rem;
+            letter-spacing: 0.2em;
+        }
+    }
+
+    .interaction-hint:hover {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    @keyframes hintFade {
+        to { opacity: 1; }
+    }
+
+    @keyframes hintFloat {
+        0%, 100% { transform: translateX(-50%) translateY(0); }
+        50% { transform: translateX(-50%) translateY(-8px); }
+    }
+
+    /* ========== CURSOR ========== */
+    .cursor {
+        position: fixed;
+        width: 8px;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        transition: transform 0.2s ease;
+        mix-blend-mode: difference;
+    }
+
+    .cursor-outer {
+        position: fixed;
+        width: 40px;
+        height: 40px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9998;
+        transition: all 0.15s ease;
+    }
+
+    /* Additional mobile optimizations */
+    @media (max-width: 768px) {
+        .cursor, .cursor-outer { display: none; }
+        
+        body {
+            overflow-x: hidden;
+        }
+        
+        .intro-overlay {
+            padding: 0 1rem;
+        }
+        
+        .intro-text {
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            padding: 0 1.5rem;
+        }
+        
+        .message-signature {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            margin-top: 2rem;
+        }
+        
+        .day-counter {
+            margin-top: 2rem;
+        }
+        
+        .day-number {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+        }
+        
+        .day-label {
+            font-size: clamp(0.7rem, 2vw, 0.9rem);
+        }
+    }
+</style>
+</head>
+<body>
+
+<!-- Custom Cursors -->
+<div class="cursor"></div>
+<div class="cursor-outer"></div>
+
+<!-- Canvas -->
+<canvas id="canvas"></canvas>
+
+<!-- Intro Sequence -->
+<div class="intro-overlay" id="intro">
+    <div class="intro-text" id="text1">In all the darkness of my world...</div>
+    <div class="intro-text" id="text2">One light appeared and changed everything...</div>
+    <div class="intro-text" id="text3">That light was you.</div>
+</div>
+
+<!-- Her Name -->
+<div class="name-container" id="nameContainer">
+    <div class="name-main">RABBIYA</div>
+    <div class="name-subtitle">my light, my universe, my everything</div>
+</div>
+
+<!-- Interaction Hint -->
+<div class="interaction-hint" id="hint">Click to read my heart</div>
+
+<!-- Message Overlay -->
+<div class="message-overlay" id="messageOverlay">
+    <div class="close-btn" onclick="closeMessage()">×</div>
+    <div class="message-content">
+        <div class="message-title">RABBIYA</div>
+        <p class="message-text">❤️💖You are the light that found me when I was in darkness❤️💖.</p>
+        <p class="message-text">❤️💖Before you, I was okay but with you, I feel whole.❤️💖</p>
+        <p class="message-text">I confessed to you on 6 December 2023 and at that time it felt that it is it, my life's complete now.</p>
+        <p class="message-text">❤️💖But Allah made me realize that it was the beginning, I have to make myself worthy of you. And in this journey, you've always been my biggest supporter❤️💖.</p>
+        <p class="message-text">❤️💖I've learnt a lot of things with you, we've grown together and at some point I knew some things were uncomfortable for both of us, but we stuck together and this is the beauty of our bond. I'm really glad that you love me in your own way that makes your love the most special thing I've ever had.❤️💖</p>
+        <p class="message-text">❤️💖I want you to know that you are and always will be the best thing ever happened to me and I'm really glad we met and started sharing this bond, you're my light in every darkness, my prayer of every day and my soul feels peace with you. My universe feels beautiful just because you're in it.❤️💖</p>
+        <div class="message-signature">Forever yours, forever grateful</div>
+        <div class="day-counter">
+            <span class="day-number" id="dayNumber">...</span>
+            <div class="day-label">Days of being the luckiest person alive</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ========== SETUP ========== 
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let w = canvas.width = window.innerWidth;
+let h = canvas.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    updateLightSource();
+});
+
+// ========== CUSTOM CURSOR ========== 
+const cursor = document.querySelector('.cursor');
+const cursorOuter = document.querySelector('.cursor-outer');
+
+let mouseX = 0, mouseY = 0;
+let cursorX = 0, cursorY = 0;
+let outerX = 0, outerY = 0;
+
+document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+});
+
+function animateCursor() {
+    cursorX += (mouseX - cursorX) * 0.2;
+    cursorY += (mouseY - cursorY) * 0.2;
+    outerX += (mouseX - outerX) * 0.1;
+    outerY += (mouseY - outerY) * 0.1;
+
+    cursor.style.left = cursorX + 'px';
+    cursor.style.top = cursorY + 'px';
+    cursorOuter.style.left = (outerX - 20) + 'px';
+    cursorOuter.style.top = (outerY - 20) + 'px';
+
+    requestAnimationFrame(animateCursor);
+}
+animateCursor();
+
+// ========== LIGHT SOURCE ========== 
+let lightSource = { x: 0, y: 0, intensity: 0 };
+
+function updateLightSource() {
+    lightSource.x = w * 0.88;
+    lightSource.y = h * 0.5;
+}
+updateLightSource();
+
+// ========== PARTICLE SYSTEM ========== 
+class Particle {
+    constructor() {
+        this.reset();
+    }
+
+    reset() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.baseX = this.x;
+        this.baseY = this.y;
+        this.size = Math.random() * 1.5 + 0.5;
+        this.color = { r: 80, g: 80, b: 90 };
+        this.targetColor = { r: 80, g: 80, b: 90 };
+        this.lit = false;
+        this.litTime = 0;
+        this.alpha = Math.random() * 0.3 + 0.1;
+    }
+
+    update() {
+        const dx = this.x - lightSource.x;
+        const dy = this.y - lightSource.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const waveRadius = lightSource.intensity * 250;
+
+        if (distance <= waveRadius && !this.lit) {
+            this.lit = true;
+            this.litTime = Date.now();
+            
+            const colors = [
+                { r: 255, g: 245, b: 220 },
+                { r: 255, g: 235, b: 200 },
+                { r: 255, g: 220, b: 180 },
+                { r: 240, g: 230, b: 210 },
+                { r: 255, g: 200, b: 150 }
+            ];
+            this.targetColor = colors[Math.floor(Math.random() * colors.length)];
+            this.alpha = Math.random() * 0.6 + 0.4;
+        }
+
+        if (this.lit) {
+            this.color.r += (this.targetColor.r - this.color.r) * 0.03;
+            this.color.g += (this.targetColor.g - this.color.g) * 0.03;
+            this.color.b += (this.targetColor.b - this.color.b) * 0.03;
+
+            const elapsed = (Date.now() - this.litTime) / 1000;
+            const orbitRadius = 2;
+            this.x = this.baseX + Math.cos(elapsed * 0.3) * orbitRadius;
+            this.y = this.baseY + Math.sin(elapsed * 0.3) * orbitRadius;
+        }
+    }
+
+    draw() {
+        const size = this.lit ? this.size * 3 : this.size * 1.5;
+        
+        ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.alpha})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (this.lit) {
+            const glowSize = size * 3;
+            const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, glowSize);
+            gradient.addColorStop(0, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.alpha * 0.3})`);
+            gradient.addColorStop(1, 'transparent');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, glowSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+const particles = [];
+for (let i = 0; i < 600; i++) {
+    particles.push(new Particle());
+}
+
+// ========== LIGHT WAVES ========== 
+class LightWave {
+    constructor() {
+        this.radius = 0;
+        this.opacity = 1;
+    }
+
+    update(dt) {
+        this.radius += 250 * dt;
+        this.opacity = Math.max(0, 1 - (this.radius / Math.sqrt(w * w + h * h)));
+    }
+
+    draw() {
+        if (this.opacity > 0.05) {
+            ctx.strokeStyle = `rgba(255, 240, 200, ${this.opacity * 0.25})`;
+            ctx.lineWidth = 1.5;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = `rgba(255, 220, 150, ${this.opacity * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(lightSource.x, lightSource.y, this.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+    }
+}
+
+let waves = [];
+let lastWave = 0;
+
+// ========== ANIMATION LOOP ========== 
+let lastTime = Date.now();
+
+function animate() {
+    const now = Date.now();
+    const dt = (now - lastTime) / 1000;
+    lastTime = now;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+    ctx.fillRect(0, 0, w, h);
+
+    particles.forEach(p => {
+        p.update();
+        p.draw();
+    });
+
+    if (lightSource.intensity > 0 && now - lastWave > 2000) {
+        waves.push(new LightWave());
+        lastWave = now;
+    }
+
+    waves = waves.filter(wave => {
+        wave.update(dt);
+        wave.draw();
+        return wave.opacity > 0.05;
+    });
+
+    if (lightSource.intensity > 0) {
+        // Outer warm glow
+        const outerGradient = ctx.createRadialGradient(
+            lightSource.x, lightSource.y, 0,
+            lightSource.x, lightSource.y, 300
+        );
+        outerGradient.addColorStop(0, `rgba(255, 245, 220, ${lightSource.intensity * 0.3})`);
+        outerGradient.addColorStop(0.3, `rgba(255, 230, 180, ${lightSource.intensity * 0.2})`);
+        outerGradient.addColorStop(0.6, `rgba(255, 200, 120, ${lightSource.intensity * 0.1})`);
+        outerGradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = outerGradient;
+        ctx.beginPath();
+        ctx.arc(lightSource.x, lightSource.y, 300, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner bright core
+        const coreGradient = ctx.createRadialGradient(
+            lightSource.x, lightSource.y, 0,
+            lightSource.x, lightSource.y, 100
+        );
+        coreGradient.addColorStop(0, `rgba(255, 255, 255, ${lightSource.intensity * 0.6})`);
+        coreGradient.addColorStop(0.5, `rgba(255, 240, 200, ${lightSource.intensity * 0.3})`);
+        coreGradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = coreGradient;
+        ctx.beginPath();
+        ctx.arc(lightSource.x, lightSource.y, 100, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+// ========== INTRO SEQUENCE ========== 
+function showText(id, delay) {
+    setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('active');
+    }, delay);
+}
+
+showText('text1', 500);
+showText('text2', 5000);
+showText('text3', 10000);
+
+setTimeout(() => {
+    document.getElementById('intro').classList.add('hidden');
+    setTimeout(() => {
+        document.getElementById('intro').style.display = 'none';
+        document.getElementById('nameContainer').classList.add('visible');
+        
+        let intensity = 0;
+        const interval = setInterval(() => {
+            intensity += 0.008;
+            lightSource.intensity = Math.min(intensity, 1);
+            if (intensity >= 1) clearInterval(interval);
+        }, 30);
+    }, 1200);
+}, 14000);
+
+// ========== MESSAGE INTERACTION ========== 
+let messageShown = false;
+
+function showMessage() {
+    if (!messageShown) {
+        document.getElementById('messageOverlay').classList.add('visible');
+        document.getElementById('hint').style.display = 'none';
+        messageShown = true;
+        
+        const startDate = new Date('2023-12-06');
+        const today = new Date();
+        const days = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
+        document.getElementById('dayNumber').textContent = days;
+    }
+}
+
+function closeMessage() {
+    document.getElementById('messageOverlay').classList.remove('visible');
+    setTimeout(() => {
+        document.getElementById('hint').style.display = 'block';
+        messageShown = false;
+    }, 1000);
+}
+
+setTimeout(() => {
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.close-btn') && !e.target.closest('.message-overlay')) {
+            showMessage();
+        }
+    });
+}, 15000);
+</script>
+
+</body>
+</html>
